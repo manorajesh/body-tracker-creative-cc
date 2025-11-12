@@ -96,20 +96,6 @@ function draw() {
   // drawPoseP();
 }
 
-//------------------------------------------
-function getFaceTarget() {
-  if (!trackingConfig.doAcquireFaceLandmarks) return;
-  if (!faceLandmarks) return;
-  if (!faceLandmarks.faceLandmarks) return;
-  if (faceLandmarks.faceLandmarks.length == 0) return;
-
-  let aFace = faceLandmarks.faceLandmarks[0];
-  let mouthPt = aFace[13]; // nose
-  let nx = map(mouthPt.x, 0, 1, width, 0);
-  let ny = map(mouthPt.y, 0, 1, 0, height);
-  return [nx, ny];
-}
-
 function updateWaypoints() {
   function toCanvas(pt) {
     return [map(pt.x, 0, 1, width, 0), map(pt.y, 0, 1, 0, height)];
