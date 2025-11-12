@@ -1,10 +1,10 @@
 class Traveler {
-  constructor(x, y, side, vx = 0, vy = 0, zDepth = 0) {
+  constructor(x, y, side, vx = 0, vy = 0, zDepth = 0, maxAge = 100) {
     this.side = side;
     // Size based on Z-depth - closer to camera (smaller z) = larger travelers
-    this.size = map(zDepth, -0.6, 0.01, 25, 10); // Adjust these ranges as needed
+    this.size = map(zDepth, -0.2, 0, 25, 5); // Adjust these ranges as needed
     this.age = 0;
-    this.maxAge = 100;
+    this.maxAge = maxAge;
     this.currentWaypointIdx = 0;
     this.isDead = false;
 
@@ -66,7 +66,7 @@ class Traveler {
     let dy = this.ty - pos.y;
     let d = Math.sqrt(dx * dx + dy * dy);
     if (d > 1) {
-      let forceScale = map(d, 0, 700, 0.0001, 0.005);
+      let forceScale = map(d, 0, 800, 0.0001, 0.005);
       // let forceScale = d * 0.00001; // Linear scaling
       // let forceScale = (d * d) * 0.000001; // Quadratic scaling (stronger)
 
@@ -74,6 +74,14 @@ class Traveler {
         x: (dx / d) * forceScale,
         y: (dy / d) * forceScale,
       });
+    }
+
+    // scale the matter body to match size (in case size changed due to z-depth)
+    const currentRadius = this.body.circleRadius;
+    const desiredRadius = this.size / 2;
+    if (currentRadius !== desiredRadius) {
+      const scaleFactor = desiredRadius / currentRadius;
+      Matter.Body.scale(this.body, scaleFactor, scaleFactor);
     }
 
     if (this.isDone()) {
@@ -91,7 +99,7 @@ class Traveler {
       }
 
       // Target will be updated at start of next frame
-      this.age = this.maxAge * 0.6;
+      this.age = this.maxAge * 0.4;
     }
   }
 
@@ -139,6 +147,8 @@ function emitTravelersFromHands() {
     )
   )
     return;
+
+  if (frameCount % 2 !== 0) return; // Spawn every 5 frames
 
   const nHands = handLandmarks.landmarks.length;
   const tips = [4, 8, 12, 16, 20]; // thumb + fingertips
@@ -238,7 +248,7 @@ function emitTravelersFromMouth() {
   const zDepth = (p[L_MOUTH].z + p[R_MOUTH].z) / 100; // Average Z depth of mouth corners
 
   // Spawn multiple travelers for more visibility
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     const offsetX = random(-10, 10); // Small random offset
     const offsetY = random(-10, 10);
     const t = new Traveler(
@@ -247,7 +257,7 @@ function emitTravelersFromMouth() {
       "mouth",
       vx + random(-1, 1),
       vy + random(-1, 1),
-      zDepth
+      zDepth * 0.01
     );
     travelers.push(t);
   }
@@ -300,7 +310,7 @@ function emitTravelersFromEyes() {
       "eyes",
       vx,
       vy,
-      zDepthLeft * 0.01
+      zDepthLeft * 0.03
     );
     travelers.push(t);
   }
@@ -318,7 +328,7 @@ function emitTravelersFromEyes() {
       "eyes",
       vx,
       vy,
-      zDepthRight * 0.01
+      zDepthRight * 0.03
     );
     travelers.push(t);
   }

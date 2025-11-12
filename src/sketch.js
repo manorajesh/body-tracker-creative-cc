@@ -76,13 +76,15 @@ function setup() {
     height,
     wallOptions
   );
-  World.add(world, [floor, ceiling, leftWall, rightWall]);
+  // World.add(world, [floor, ceiling, leftWall, rightWall]);
 }
 
 //------------------------------------------
 function draw() {
   background(0, 50);
-  drawVideoBackground();
+  filter(BLUR, 1);
+
+  // drawVideoBackground();
 
   // physics step
   Engine.update(engine);
@@ -94,9 +96,12 @@ function draw() {
   emitTravelersFromMouth();
   emitTravelersFromEyes();
   updateAndDrawTravelers();
-
   // drawDiagnosticInfo();
   // drawPoseP();
+
+  // if (frameCount % 60 === 0) {
+  //   console.log("n travelers:", travelers.length);
+  // }
 }
 
 function updateWaypoints() {
