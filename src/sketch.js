@@ -29,6 +29,8 @@ let world;
 let right_waypoints = [[]];
 let left_waypoints = [[]];
 let mouth_waypoints = [[]];
+let left_knee_waypoints = [[]];
+let right_knee_waypoints = [[]];
 
 //----------------------------------------------------
 let trackingConfig = {
@@ -95,6 +97,7 @@ function draw() {
   emitTravelersFromHands();
   emitTravelersFromMouth();
   emitTravelersFromEyes();
+  emitTravelersFromKnees();
   updateAndDrawTravelers();
   // drawDiagnosticInfo();
   // drawPoseP();
@@ -122,6 +125,12 @@ function updateWaypoints() {
           const R_ELBOW = 14;
           const L_WRIST = 15;
           const R_WRIST = 16;
+          const L_HIP = 23;
+          const R_HIP = 24;
+          const L_KNEE = 25;
+          const R_KNEE = 26;
+          const R_FOOT = 28;
+          const L_FOOT = 27;
 
           const R_MOUTH = 10;
           const L_MOUTH = 9;
@@ -131,11 +140,17 @@ function updateWaypoints() {
           const leftElbow = toCanvas(p[L_ELBOW]);
           const leftWrist = toCanvas(p[L_WRIST]);
           const leftMouth = toCanvas(p[L_MOUTH]);
+          const leftHip = toCanvas(p[L_HIP]);
+          const leftKnee = toCanvas(p[L_KNEE]);
+          const leftFoot = toCanvas(p[L_FOOT]);
 
           const rightShoulder = toCanvas(p[R_SHOULDER]);
           const rightElbow = toCanvas(p[R_ELBOW]);
           const rightWrist = toCanvas(p[R_WRIST]);
           const rightMouth = toCanvas(p[R_MOUTH]);
+          const rightHip = toCanvas(p[R_HIP]);
+          const rightKnee = toCanvas(p[R_KNEE]);
+          const rightFoot = toCanvas(p[R_FOOT]);
 
           // Calculate heart position (center between shoulders, slightly below)
           const heartX = (leftShoulder[0] + rightShoulder[0]) / 2;
@@ -167,6 +182,23 @@ function updateWaypoints() {
           mouth_waypoints = [
             mouthCenter, // Start at mouth center
             heart, // Go directly to heart
+          ];
+
+          // Paths from knees to heart
+          left_knee_waypoints = [
+            leftFoot, // Start at left foot
+            leftKnee, // Start at left knee
+            leftHip, // Through left hip
+            leftShoulder, // Through left shoulder
+            heart, // End at heart
+          ];
+
+          right_knee_waypoints = [
+            rightFoot, // Start at right foot
+            rightKnee, // Start at right knee
+            rightHip, // Through right hip
+            rightShoulder, // Through right shoulder
+            heart, // End at heart
           ];
         }
       }

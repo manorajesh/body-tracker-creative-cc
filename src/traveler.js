@@ -11,6 +11,10 @@ class Traveler {
     let waypoints;
     if (side === "mouth" || side === "eyes") {
       waypoints = mouth_waypoints; // Eyes use same path as mouth (direct to heart)
+    } else if (side === "left_knee") {
+      waypoints = left_knee_waypoints;
+    } else if (side === "right_knee") {
+      waypoints = right_knee_waypoints;
     } else {
       waypoints = this.side === "left" ? left_waypoints : right_waypoints;
     }
@@ -51,6 +55,10 @@ class Traveler {
     let waypoints;
     if (this.side === "mouth" || this.side === "eyes") {
       waypoints = mouth_waypoints; // Eyes use same path as mouth
+    } else if (this.side === "left_knee") {
+      waypoints = left_knee_waypoints;
+    } else if (this.side === "right_knee") {
+      waypoints = right_knee_waypoints;
     } else {
       waypoints = this.side === "left" ? left_waypoints : right_waypoints;
     }
@@ -89,6 +97,10 @@ class Traveler {
       let waypoints;
       if (this.side === "mouth" || this.side === "eyes") {
         waypoints = mouth_waypoints; // Eyes use same path as mouth
+      } else if (this.side === "left_knee") {
+        waypoints = left_knee_waypoints;
+      } else if (this.side === "right_knee") {
+        waypoints = right_knee_waypoints;
       } else {
         waypoints = this.side === "left" ? left_waypoints : right_waypoints;
       }
@@ -329,6 +341,74 @@ function emitTravelersFromEyes() {
       vx,
       vy,
       zDepthRight * 0.03
+    );
+    travelers.push(t);
+  }
+}
+
+function emitTravelersFromKnees() {
+  if (
+    !(
+      trackingConfig.doAcquirePoseLandmarks &&
+      poseLandmarks &&
+      poseLandmarks.landmarks
+    )
+  )
+    return;
+
+  const nPoses = poseLandmarks.landmarks.length;
+  if (nPoses === 0) return;
+
+  const p = poseLandmarks.landmarks[0];
+  const L_KNEE = 25; // Left knee
+  const R_KNEE = 26; // Right knee
+
+  // Calculate knee positions
+  const leftKnee = [
+    map(p[L_KNEE].x, 0, 1, width, 0),
+    map(p[L_KNEE].y, 0, 1, 0, height),
+  ];
+  const rightKnee = [
+    map(p[R_KNEE].x, 0, 1, width, 0),
+    map(p[R_KNEE].y, 0, 1, 0, height),
+  ];
+
+  // Create travelers from each knee
+  const zDepthLeft = p[L_KNEE].z;
+  const zDepthRight = p[R_KNEE].z;
+
+  // Spawn from left knee
+  for (let i = 0; i < 3; i++) {
+    const offsetX = random(-8, 8);
+    const offsetY = random(-8, 8);
+    const vx = random(-1.5, 1.5);
+    const vy = random(-2, 0); // Slight upward bias
+
+    const t = new Traveler(
+      leftKnee[0] + offsetX,
+      leftKnee[1] + offsetY,
+      "left_knee",
+      vx,
+      vy,
+      zDepthLeft * 0.1
+    );
+    travelers.push(t);
+  }
+
+  // Spawn from right knee
+  for (let i = 0; i < 2; i++) {
+    const offsetX = random(-8, 8);
+    const offsetY = random(-8, 8);
+    const vx = random(-1.5, 1.5);
+    const vy = random(-2, 0); // Slight upward bias
+
+    const t = new Traveler(
+      rightKnee[0] + offsetX,
+      rightKnee[1] + offsetY,
+      "right_knee",
+      vx,
+      vy,
+      zDepthRight * 0.1
     );
     travelers.push(t);
   }
