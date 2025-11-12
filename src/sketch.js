@@ -28,6 +28,7 @@ let world;
 
 let right_waypoints = [[]];
 let left_waypoints = [[]];
+let mouth_waypoints = [[]];
 
 //----------------------------------------------------
 let trackingConfig = {
@@ -90,6 +91,8 @@ function draw() {
 
   // spawn + draw
   emitTravelersFromHands();
+  emitTravelersFromMouth();
+  emitTravelersFromEyes();
   updateAndDrawTravelers();
 
   // drawDiagnosticInfo();
@@ -101,18 +104,10 @@ function updateWaypoints() {
     return [map(pt.x, 0, 1, width, 0), map(pt.y, 0, 1, 0, height)];
   }
 
-  function getArmCenter(joint1, joint2) {
-    // Calculate midpoint between two joints
-    return [(joint1[0] + joint2[0]) / 2, (joint1[1] + joint2[1]) / 2];
-  }
-
   if (trackingConfig.doAcquirePoseLandmarks) {
     if (poseLandmarks && poseLandmarks.landmarks) {
       const nPoses = poseLandmarks.landmarks.length;
       if (nPoses > 0) {
-        // noFill();
-        // stroke("darkblue");
-        // strokeWeight(2.0);
         for (let h = 0; h < nPoses; h++) {
           let p = poseLandmarks.landmarks[h];
 
@@ -137,29 +132,36 @@ function updateWaypoints() {
           const rightWrist = toCanvas(p[R_WRIST]);
           const rightMouth = toCanvas(p[R_MOUTH]);
 
-          // Calculate arm segment centers
-          const leftUpperArmCenter = getArmCenter(leftShoulder, leftElbow);
-          const leftLowerArmCenter = getArmCenter(leftElbow, leftWrist);
+          // Calculate heart position (center between shoulders, slightly below)
+          const heartX = (leftShoulder[0] + rightShoulder[0]) / 2;
+          const heartY = (leftShoulder[1] + rightShoulder[1]) / 2 + 50; // 50px below shoulder line
+          const heart = [heartX, heartY];
 
-          const rightUpperArmCenter = getArmCenter(rightShoulder, rightElbow);
-          const rightLowerArmCenter = getArmCenter(rightElbow, rightWrist);
+          // Calculate mouth center
+          const mouthCenter = [
+            (leftMouth[0] + rightMouth[0]) / 2,
+            (leftMouth[1] + rightMouth[1]) / 2,
+          ];
 
+          // Simple paths from extremities to heart
           left_waypoints = [
-            leftWrist,
-            leftLowerArmCenter,
-            leftElbow,
-            leftUpperArmCenter,
-            leftShoulder,
-            leftMouth,
+            leftWrist, // Start at wrist (fingertips will spawn here)
+            leftElbow, // Through elbow
+            leftShoulder, // Through shoulder
+            heart, // End at heart
           ];
 
           right_waypoints = [
-            rightWrist,
-            rightLowerArmCenter,
-            rightElbow,
-            rightUpperArmCenter,
-            rightShoulder,
-            rightMouth,
+            rightWrist, // Start at wrist (fingertips will spawn here)
+            rightElbow, // Through elbow
+            rightShoulder, // Through shoulder
+            heart, // End at heart
+          ];
+
+          // Path from mouth to heart
+          mouth_waypoints = [
+            mouthCenter, // Start at mouth center
+            heart, // Go directly to heart
           ];
         }
       }
