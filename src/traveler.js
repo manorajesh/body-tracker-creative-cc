@@ -1,7 +1,8 @@
 class Traveler {
-  constructor(x, y, side, vx = 0, vy = 0) {
+  constructor(x, y, side, vx = 0, vy = 0, zDepth = 0) {
     this.side = side;
-    this.size = 10;
+    // Size based on Z-depth - closer to camera (smaller z) = larger travelers
+    this.size = map(zDepth, -0.6, 0.01, 25, 10); // Adjust these ranges as needed
     this.age = 0;
     this.maxAge = 100;
     this.currentWaypointIdx = 0;
@@ -126,6 +127,7 @@ function emitTravelersFromHands() {
       // map normalized [0..1] to canvas, and mirror like your video
       const sx = map(tip.x, 0, 1, width, 0);
       const sy = map(tip.y, 0, 1, 0, height);
+      const sz = tip.z; // Z-depth from MediaPipe (negative = closer to camera)
 
       // --- compute fingertip velocity from last sample ---
       const key = `${side}-${tipIndex}`;
@@ -162,8 +164,8 @@ function emitTravelersFromHands() {
         vy *= k;
       }
 
-      // spawn with initial velocity
-      const t = new Traveler(sx, sy, side, vx, vy);
+      // spawn with initial velocity and Z-depth
+      const t = new Traveler(sx, sy, side, vx, vy, sz);
       travelers.push(t);
     }
   }
