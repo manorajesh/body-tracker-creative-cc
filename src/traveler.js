@@ -5,6 +5,7 @@ class Traveler {
     this.age = 0;
     this.maxAge = 100;
     this.currentWaypointIdx = 0;
+    this.isDead = false;
 
     const waypoints = this.side === "left" ? left_waypoints : right_waypoints;
     this.tx = waypoints[0][0];
@@ -41,8 +42,10 @@ class Traveler {
     let dy = this.ty - pos.y;
     let d = Math.sqrt(dx * dx + dy * dy);
     if (d > 1) {
-      // Increased force scale for more responsive movement
-      let forceScale = random(0.001, 0.0001);
+      let forceScale = map(d, 0, 700, 0.0001, 0.005);
+      // let forceScale = d * 0.00001; // Linear scaling
+      // let forceScale = (d * d) * 0.000001; // Quadratic scaling (stronger)
+
       Matter.Body.applyForce(this.body, pos, {
         x: (dx / d) * forceScale,
         y: (dy / d) * forceScale,
@@ -51,7 +54,10 @@ class Traveler {
 
     if (this.isDone()) {
       this.currentWaypointIdx++;
-      if (this.currentWaypointIdx >= waypoints.length) return;
+      if (this.currentWaypointIdx >= waypoints.length) {
+        this.isDead = true;
+        return;
+      }
 
       // Target will be updated at start of next frame
       this.age = this.maxAge * 0.6;
@@ -83,7 +89,7 @@ function updateAndDrawTravelers() {
     let t = travelers[i];
     t.update();
     t.display();
-    if (t.isDone()) {
+    if (t.isDead) {
       // remove from physics world too
       World.remove(world, t.body);
       travelers.splice(i, 1);
