@@ -1,24 +1,24 @@
 class Traveler {
   constructor(x, y, side, vx = 0, vy = 0) {
     this.side = side;
-    this.waypoints = side == "left" ? left_waypoints : right_waypoints;
-    this.tx = this.waypoints[0][0];
-    this.ty = this.waypoints[0][1];
     this.size = 10;
     this.age = 0;
     this.maxAge = 100;
     this.currentWaypointIdx = 0;
 
+    const waypoints = this.side === "left" ? left_waypoints : right_waypoints;
+    this.tx = waypoints[0][0];
+    this.ty = waypoints[0][1];
+
     const options = {
       friction: 0.01,
-      frictionAir: 0.03, // gentle glide-down of velocity
+      frictionAir: 0.03,
       restitution: 0.7,
       density: 0.01,
     };
     this.body = Bodies.circle(x, y, this.size / 2, options);
     World.add(world, this.body);
 
-    // apply initial velocity (px per step)
     Matter.Body.setVelocity(this.body, {
       x: vx,
       y: vy,
@@ -28,14 +28,21 @@ class Traveler {
   update() {
     this.age++;
 
+    const waypoints = this.side === "left" ? left_waypoints : right_waypoints;
+
+    if (this.currentWaypointIdx < waypoints.length) {
+      this.tx = waypoints[this.currentWaypointIdx][0];
+      this.ty = waypoints[this.currentWaypointIdx][1];
+    }
+
     // pull toward target a little
     let pos = this.body.position;
     let dx = this.tx - pos.x;
     let dy = this.ty - pos.y;
     let d = Math.sqrt(dx * dx + dy * dy);
     if (d > 1) {
-      // small force so they still collide naturally
-      let forceScale = random(0.002, 0.0001);
+      // Increased force scale for more responsive movement
+      let forceScale = random(0.001, 0.0001);
       Matter.Body.applyForce(this.body, pos, {
         x: (dx / d) * forceScale,
         y: (dy / d) * forceScale,
@@ -44,10 +51,9 @@ class Traveler {
 
     if (this.isDone()) {
       this.currentWaypointIdx++;
-      if (this.currentWaypointIdx >= this.waypoints.length) return;
+      if (this.currentWaypointIdx >= waypoints.length) return;
 
-      this.tx = this.waypoints[this.currentWaypointIdx][0];
-      this.ty = this.waypoints[this.currentWaypointIdx][1];
+      // Target will be updated at start of next frame
       this.age = this.maxAge * 0.6;
     }
   }
