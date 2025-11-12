@@ -55,7 +55,7 @@ function setup() {
   createCanvas(640 * 1.5, 480 * 1.5);
 
   myCapture = createCapture(VIDEO);
-  myCapture.size(160, 120);
+  myCapture.size(80, 60);
   myCapture.hide();
 
   initiateTracking();
