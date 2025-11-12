@@ -50,13 +50,25 @@ async function preload() {
   preloadTracker();
 }
 
+// Add this function after your existing functions
+
+function mousePressed() {
+  // Start video on mouse click
+  myCapture.play();
+  console.log("Video started by user click");
+}
+
 //------------------------------------------
 function setup() {
   createCanvas(640 * 1.5, 480 * 1.5);
 
   myCapture = createCapture(VIDEO);
-  myCapture.size(80, 60);
+  // myCapture = createVideo("dancing.mp4");
+  myCapture.size(180 * 1.5, 120 * 1.5);
   myCapture.hide();
+  // myCapture.loop();
+  // myCapture.volume(0);
+  // myCapture.speed(0.4);
 
   initiateTracking();
 
