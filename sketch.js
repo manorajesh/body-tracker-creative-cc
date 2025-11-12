@@ -1,0 +1,223 @@
+// p5.js interface to Google MediaPipe Landmark Tracking
+// Combines face, hands, and bodies into one tracker.
+// See https://mediapipe-studio.webapps.google.com/home
+// Uses p5.js v.1.11.11 + MediaPipe v.0.10.22-rc.20250304
+// By Golan Levin, revised as of 10/21/2025
+//
+// This app demonstrates how to access:
+// - face points (e.g. clown nose)
+// - hand points (e.g. thumb plum)
+// - face metrics (e.g. jaw openness)
+// - body pose
+
+//----------------------------------------------------
+// MediaPipe globals (don't change names)
+let handLandmarks;
+let poseLandmarks;
+let faceLandmarks;
+let myCapture;
+
+let travelers = [];
+let prevTipSamples = {};
+
+let Engine = Matter.Engine;
+let World = Matter.World;
+let Bodies = Matter.Bodies;
+let engine;
+let world;
+
+let right_waypoints = [[]];
+let left_waypoints = [[]];
+
+//----------------------------------------------------
+let trackingConfig = {
+  doAcquireHandLandmarks: true,
+  doAcquirePoseLandmarks: true,
+  doAcquireFaceLandmarks: false,
+  doAcquireFaceMetrics: false,
+  poseModelLiteOrFull: "lite",
+  cpuOrGpuString: "GPU",
+  maxNumHands: 2,
+  maxNumPoses: 1,
+  maxNumFaces: 1,
+};
+
+//------------------------------------------
+async function preload() {
+  preloadTracker();
+}
+
+//------------------------------------------
+function setup() {
+  createCanvas(640 * 1.5, 480 * 1.5);
+
+  myCapture = createCapture(VIDEO);
+  myCapture.size(160, 120);
+  myCapture.hide();
+
+  initiateTracking();
+
+  engine = Engine.create();
+  world = engine.world;
+  world.gravity.y = 0;
+
+  // simple walls so circles don't fall off
+  let wallOptions = {
+    isStatic: true,
+  };
+  let floor = Bodies.rectangle(width / 2, height + 20, width, 40, wallOptions);
+  let ceiling = Bodies.rectangle(width / 2, -20, width, 40, wallOptions);
+  let leftWall = Bodies.rectangle(-20, height / 2, 40, height, wallOptions);
+  let rightWall = Bodies.rectangle(
+    width + 20,
+    height / 2,
+    40,
+    height,
+    wallOptions
+  );
+  World.add(world, [floor, ceiling, leftWall, rightWall]);
+}
+
+//------------------------------------------
+function draw() {
+  background(0, 50);
+  drawVideoBackground();
+
+  // physics step
+  Engine.update(engine);
+
+  if (myCapture.loadedmetadata) myCapture.loadPixels();
+
+  // spawn + draw
+  emitTravelersFromHands();
+  updateAndDrawTravelers();
+
+  // drawDiagnosticInfo();
+  // drawPoseP();
+}
+
+//------------------------------------------
+function getFaceTarget() {
+  if (!trackingConfig.doAcquireFaceLandmarks) return;
+  if (!faceLandmarks) return;
+  if (!faceLandmarks.faceLandmarks) return;
+  if (faceLandmarks.faceLandmarks.length == 0) return;
+
+  let aFace = faceLandmarks.faceLandmarks[0];
+  let mouthPt = aFace[13]; // nose
+  let nx = map(mouthPt.x, 0, 1, width, 0);
+  let ny = map(mouthPt.y, 0, 1, 0, height);
+  return [nx, ny];
+}
+
+function updateWaypoints() {
+  function toCanvas(pt) {
+    return [map(pt.x, 0, 1, width, 0), map(pt.y, 0, 1, 0, height)];
+  }
+
+  if (trackingConfig.doAcquirePoseLandmarks) {
+    if (poseLandmarks && poseLandmarks.landmarks) {
+      const nPoses = poseLandmarks.landmarks.length;
+      if (nPoses > 0) {
+        // noFill();
+        // stroke("darkblue");
+        // strokeWeight(2.0);
+        for (let h = 0; h < nPoses; h++) {
+          let p = poseLandmarks.landmarks[h];
+
+          const L_SHOULDER = 11;
+          const R_SHOULDER = 12;
+          const L_ELBOW = 13;
+          const R_ELBOW = 14;
+
+          const R_MOUTH = 10;
+          const L_MOUTH = 9;
+
+          left_waypoints = [
+            toCanvas(p[L_ELBOW]),
+            toCanvas(p[L_SHOULDER]),
+            toCanvas(p[L_MOUTH]),
+          ];
+
+          right_waypoints = [
+            toCanvas(p[R_ELBOW]),
+            toCanvas(p[R_SHOULDER]),
+            toCanvas(p[R_MOUTH]),
+          ];
+        }
+      }
+    }
+  }
+}
+
+//------------------------------------------
+function drawVideoBackground() {
+  push();
+  translate(width, 0);
+  scale(-1, 1);
+  tint(255, 255, 255, 3);
+  image(myCapture, 0, 0, width, height);
+  tint(255);
+  pop();
+}
+
+//------------------------------------------
+let frameRateAvg = 60.0;
+
+function drawDiagnosticInfo() {
+  noStroke();
+  fill("white");
+  textSize(12);
+  frameRateAvg = 0.98 * frameRateAvg + 0.02 * frameRate();
+  text("FPS: " + nf(frameRateAvg, 1, 2), 40, 30);
+}
+
+function drawPoseP() {
+  if (trackingConfig.doAcquirePoseLandmarks) {
+    if (poseLandmarks && poseLandmarks.landmarks) {
+      const nPoses = poseLandmarks.landmarks.length;
+      if (nPoses > 0) {
+        // Draw lines connecting the joints of the body
+        noFill();
+        stroke("darkblue");
+        strokeWeight(2.0);
+        for (let h = 0; h < nPoses; h++) {
+          let joints = poseLandmarks.landmarks[h];
+          for (let i in joints) {
+            let p = joints[i];
+            let x = map(p.x, 1, 0, 0, width);
+            let y = map(p.y, 0, 1, 0, height);
+
+            // if (i == 12) stroke('red');
+            // else stroke('darkblue')
+            // circle(x, y, 10);
+          }
+          drawConnectors(joints, PoseLandmarker.POSE_CONNECTIONS);
+        }
+      }
+    }
+  }
+}
+
+function getVideoColorAtFast(x, y) {
+  if (!myCapture.pixels || myCapture.pixels.length === 0) return color(255);
+
+  // mirror horizontally like the displayed video
+  const vx = constrain(
+    map(x, 0, width, myCapture.width, 0),
+    0,
+    myCapture.width - 1
+  );
+  const vy = constrain(
+    map(y, 0, height, 0, myCapture.height),
+    0,
+    myCapture.height - 1
+  );
+
+  const idx = 4 * (int(vy) * myCapture.width + int(vx)); // RGBA
+  const r = myCapture.pixels[idx];
+  const g = myCapture.pixels[idx + 1];
+  const b = myCapture.pixels[idx + 2];
+  const a = myCapture.pixels[idx + 3];
+  return color(r, g, b, a);
+}
