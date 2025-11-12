@@ -35,7 +35,7 @@ class Traveler {
     let d = Math.sqrt(dx * dx + dy * dy);
     if (d > 1) {
       // small force so they still collide naturally
-      let forceScale = random(0.001, 0.0001);
+      let forceScale = random(0.002, 0.0001);
       Matter.Body.applyForce(this.body, pos, {
         x: (dx / d) * forceScale,
         y: (dy / d) * forceScale,
@@ -48,7 +48,7 @@ class Traveler {
 
       this.tx = this.waypoints[this.currentWaypointIdx][0];
       this.ty = this.waypoints[this.currentWaypointIdx][1];
-      this.age = 50;
+      this.age = this.maxAge * 0.6;
     }
   }
 
@@ -66,7 +66,7 @@ class Traveler {
 
   isDone() {
     let pos = this.body.position;
-    let close = dist(pos.x, pos.y, this.tx, this.ty) < 6;
+    let close = dist(pos.x, pos.y, this.tx, this.ty) < 10;
     let old = this.age > this.maxAge;
     return close || old;
   }

@@ -101,6 +101,11 @@ function updateWaypoints() {
     return [map(pt.x, 0, 1, width, 0), map(pt.y, 0, 1, 0, height)];
   }
 
+  function getArmCenter(joint1, joint2) {
+    // Calculate midpoint between two joints
+    return [(joint1[0] + joint2[0]) / 2, (joint1[1] + joint2[1]) / 2];
+  }
+
   if (trackingConfig.doAcquirePoseLandmarks) {
     if (poseLandmarks && poseLandmarks.landmarks) {
       const nPoses = poseLandmarks.landmarks.length;
@@ -115,20 +120,46 @@ function updateWaypoints() {
           const R_SHOULDER = 12;
           const L_ELBOW = 13;
           const R_ELBOW = 14;
+          const L_WRIST = 15;
+          const R_WRIST = 16;
 
           const R_MOUTH = 10;
           const L_MOUTH = 9;
 
+          // Convert pose points to canvas coordinates
+          const leftShoulder = toCanvas(p[L_SHOULDER]);
+          const leftElbow = toCanvas(p[L_ELBOW]);
+          const leftWrist = toCanvas(p[L_WRIST]);
+          const leftMouth = toCanvas(p[L_MOUTH]);
+
+          const rightShoulder = toCanvas(p[R_SHOULDER]);
+          const rightElbow = toCanvas(p[R_ELBOW]);
+          const rightWrist = toCanvas(p[R_WRIST]);
+          const rightMouth = toCanvas(p[R_MOUTH]);
+
+          // Calculate arm segment centers
+          const leftUpperArmCenter = getArmCenter(leftShoulder, leftElbow);
+          const leftLowerArmCenter = getArmCenter(leftElbow, leftWrist);
+
+          const rightUpperArmCenter = getArmCenter(rightShoulder, rightElbow);
+          const rightLowerArmCenter = getArmCenter(rightElbow, rightWrist);
+
           left_waypoints = [
-            toCanvas(p[L_ELBOW]),
-            toCanvas(p[L_SHOULDER]),
-            toCanvas(p[L_MOUTH]),
+            leftWrist,
+            leftLowerArmCenter,
+            leftElbow,
+            leftUpperArmCenter,
+            leftShoulder,
+            leftMouth,
           ];
 
           right_waypoints = [
-            toCanvas(p[R_ELBOW]),
-            toCanvas(p[R_SHOULDER]),
-            toCanvas(p[R_MOUTH]),
+            rightWrist,
+            rightLowerArmCenter,
+            rightElbow,
+            rightUpperArmCenter,
+            rightShoulder,
+            rightMouth,
           ];
         }
       }
